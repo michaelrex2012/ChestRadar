@@ -1,0 +1,39 @@
+{
+	"schemaVersion": 1,
+	"id": "chestradar",
+	"version": "${version}",
+	"name": "Chest Radar",
+	"description": "A visual tool to instantly locate and count your currently held item across nearby containers.",
+	"authors": [
+		"Quark19"
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/project/chest-radar",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/chestradar/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"quark19.chestradar.ChestRadar"
+		],
+		"client": [
+			"quark19.chestradar.client.ChestRadarClient"
+		],
+		"modmenu": [
+			"quark19.chestradar.client.ModMenuIntegration"
+		]
+	},
+	"mixins": [],
+	"depends": {
+		"fabricloader": ">=0.18.0",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*",
+		"cloth-config": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
