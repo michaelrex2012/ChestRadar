@@ -19,7 +19,6 @@ public class ModMenuIntegration implements ModMenuApi {
             ConfigEntryBuilder entryBuilder = builder.entryBuilder();
             ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
 
-            // Server-side setting entry
             general.addEntry(entryBuilder.startIntField(Component.literal("Scan Radius"), ModConfig.INSTANCE.scanRadius)
                     .setDefaultValue(24)
                     .setMin(8)
@@ -28,7 +27,6 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanRadius = newValue)
                     .build());
 
-            // Save handler
             builder.setSavingRunnable(ModConfig::save);
 
             return builder.build();

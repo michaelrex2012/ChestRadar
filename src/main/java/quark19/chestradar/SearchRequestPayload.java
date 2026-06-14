@@ -10,7 +10,6 @@ public record SearchRequestPayload(ItemStack stack) implements CustomPacketPaylo
     public static final CustomPacketPayload.Type<SearchRequestPayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("chestradar", "search_request"));
 
-    //.of used instead .ofStatic
     public static final StreamCodec<RegistryFriendlyByteBuf, SearchRequestPayload> CODEC = StreamCodec.of(
             (buf, payload) -> ItemStack.STREAM_CODEC.encode(buf, payload.stack()),
             buf -> new SearchRequestPayload(ItemStack.STREAM_CODEC.decode(buf))

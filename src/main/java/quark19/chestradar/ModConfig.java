@@ -25,7 +25,7 @@ public class ModConfig {
                 e.printStackTrace();
             }
         } else {
-            save(); // Create default config file if missing
+            save();
         }
     }
 
