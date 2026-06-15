@@ -213,7 +213,7 @@ public class ChestRadarClient implements ClientModInitializer {
 	                                float maxX, float maxY, float maxZ,
 	                                float r, float g, float b, float a) {
 		Matrix4f matrix = pose.pose();
-		float thickness = 4.0f;
+		float thickness = ModConfig.INSTANCE.outlineThickness;
 
 		vertex(buffer, matrix, minX, minY, minZ, r, g, b, a, thickness);
 		vertex(buffer, matrix, maxX, minY, minZ, r, g, b, a, thickness);

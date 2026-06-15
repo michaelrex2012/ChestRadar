@@ -36,6 +36,14 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.slimOutlines = newValue)
                     .build());
 
+            rendering.addEntry(entryBuilder.startFloatField(Component.literal("Outline Thickness"), ModConfig.INSTANCE.outlineThickness)
+                    .setDefaultValue(2)
+                    .setMin(1)
+                    .setMax(4)
+                    .setTooltip(Component.literal("How thick outlines will be."))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.outlineThickness = newValue)
+                    .build());
+
             ConfigCategory controls = builder.getOrCreateCategory(Component.literal("Controls"));
 
             controls.addEntry(entryBuilder.startBooleanToggle(Component.literal("Search Keybind Mode"), ModConfig.INSTANCE.toggleMode)
