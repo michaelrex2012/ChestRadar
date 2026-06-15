@@ -36,6 +36,15 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.slimOutlines = newValue)
                     .build());
 
+            ConfigCategory controls = builder.getOrCreateCategory(Component.literal("Controls"));
+
+            controls.addEntry(entryBuilder.startBooleanToggle(Component.literal("Search Keybind Mode"), ModConfig.INSTANCE.toggleMode)
+                    .setYesNoTextSupplier(bool -> bool ? Component.literal("Toggle") : Component.literal("Hold"))
+                    .setDefaultValue(false)
+                    .setTooltip(Component.literal("Hold or toggle keybind."))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.toggleMode = newValue)
+                    .build());
+
             builder.setSavingRunnable(ModConfig::save);
 
             return builder.build();

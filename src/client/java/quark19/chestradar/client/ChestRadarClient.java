@@ -36,6 +36,7 @@ public class ChestRadarClient implements ClientModInitializer {
 
 	private int scanCooldown = 0;
 	private boolean wasPressedLastTick = false;
+	private boolean isToggleActive = false;
 
 	private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -62,26 +63,59 @@ public class ChestRadarClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.player == null) return;
 
-			if (highlightKeyMapping.isDown()) {
-				wasPressedLastTick = true;
+			ModConfig.load();
+			boolean useToggle = ModConfig.INSTANCE.toggleMode;
 
-				if (scanCooldown <= 0) {
-					ItemStack heldItem = client.player.getMainHandItem();
+			if (useToggle) {
+				wasPressedLastTick = false;
 
-					if (!heldItem.isEmpty()) {
-						ModConfig.load();
-						ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
+				if (highlightKeyMapping.consumeClick()) {
+					isToggleActive = !isToggleActive;
+
+					if (!isToggleActive) {
+						CHEST_CACHE.clear();
+						scanCooldown = 0;
 					}
-
-					scanCooldown = 10;
-				} else {
-					scanCooldown--;
 				}
+
+				if (isToggleActive) {
+					if (scanCooldown <= 0) {
+						ItemStack heldItem = client.player.getMainHandItem();
+						if (!heldItem.isEmpty()) {
+							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
+						} else {
+							CHEST_CACHE.clear();
+						}
+						scanCooldown = 10;
+					} else {
+						scanCooldown--;
+					}
+				}
+
 			} else {
-				if (wasPressedLastTick) {
-					CHEST_CACHE.clear();
-					scanCooldown = 0;
-					wasPressedLastTick = false;
+				isToggleActive = false;
+
+				if (highlightKeyMapping.isDown()) {
+					wasPressedLastTick = true;
+
+					if (scanCooldown <= 0) {
+						ItemStack heldItem = client.player.getMainHandItem();
+						if (!heldItem.isEmpty()) {
+							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
+						} else {
+							CHEST_CACHE.clear();
+						}
+						scanCooldown = 10;
+					} else {
+						scanCooldown--;
+					}
+				} else {
+					// Wipe cache immediately upon key release
+					if (wasPressedLastTick) {
+						CHEST_CACHE.clear();
+						scanCooldown = 0;
+						wasPressedLastTick = false;
+					}
 				}
 			}
 		});

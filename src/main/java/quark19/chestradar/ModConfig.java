@@ -16,6 +16,7 @@ public class ModConfig {
     public static class Instance {
         public int scanRadius = 24;
         public boolean slimOutlines = false;
+        public boolean toggleMode = false;
     }
 
     public static void load() {
