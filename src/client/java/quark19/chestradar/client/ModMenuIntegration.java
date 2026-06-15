@@ -27,6 +27,15 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanRadius = newValue)
                     .build());
 
+            ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
+
+            rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Slim Outlines"), ModConfig.INSTANCE.slimOutlines)
+                    .setDefaultValue(false)
+                    .setYesNoTextSupplier(bool -> bool ? Component.literal("Yes") : Component.literal("No"))
+                    .setTooltip(Component.literal("Outlines becomes smaller. Chest outlines look better with this enabled, but outlines on barrels and shulker boxes are not visible"))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.slimOutlines = newValue)
+                    .build());
+
             builder.setSavingRunnable(ModConfig::save);
 
             return builder.build();
