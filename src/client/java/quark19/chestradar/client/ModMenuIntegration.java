@@ -23,7 +23,7 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setDefaultValue(24)
                     .setMin(8)
                     .setMax(32)
-                    .setTooltip(Component.literal("Radius of blocks the mod will search (Client Only)."))
+                    .setTooltip(Component.literal("Radius of blocks the mod will search (Singleplayer or server host only)."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanRadius = newValue)
                     .build());
 
