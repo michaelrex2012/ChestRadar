@@ -29,6 +29,7 @@ public class ModMenuIntegration implements ModMenuApi {
 
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
             rendering.addEntry(entryBuilder.startSubCategory(Component.literal("Outline")).build());
+            
 
             rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Slim Outlines"), ModConfig.INSTANCE.slimOutlines)
                     .setDefaultValue(false)

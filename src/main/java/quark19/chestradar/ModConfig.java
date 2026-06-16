@@ -18,6 +18,7 @@ public class ModConfig {
         public boolean slimOutlines = false;
         public boolean toggleMode = false;
         public float outlineThickness = 2.0f;
+        public boolean renderOutlines = true;
     }
 
     public static void load() {
