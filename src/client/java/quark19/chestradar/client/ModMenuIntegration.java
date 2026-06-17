@@ -2,9 +2,7 @@ package quark19.chestradar.client;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-import me.shedaniel.clothconfig2.api.ConfigBuilder;
-import me.shedaniel.clothconfig2.api.ConfigCategory;
-import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import me.shedaniel.clothconfig2.api.*;
 import net.minecraft.network.chat.Component;
 import quark19.chestradar.ModConfig;
 
@@ -28,20 +26,22 @@ public class ModMenuIntegration implements ModMenuApi {
                     .build());
 
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
-            rendering.addEntry(entryBuilder.startSubCategory(Component.literal("Outline")).build());
 
-            rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Render Outlines"), ModConfig.INSTANCE.renderOutlines)
+            var renderOutlines = entryBuilder.startBooleanToggle(Component.literal("Render Outlines"), ModConfig.INSTANCE.renderOutlines)
                     .setDefaultValue(true)
                     .setYesNoTextSupplier(bool -> bool ? Component.literal("Yes") : Component.literal("No"))
                     .setTooltip(Component.literal("If outlines should be rendered."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.renderOutlines = newValue)
-                    .build());
+                    .build();
+
+            rendering.addEntry(renderOutlines);
 
             rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Slim Outlines"), ModConfig.INSTANCE.slimOutlines)
                     .setDefaultValue(false)
                     .setYesNoTextSupplier(bool -> bool ? Component.literal("Yes") : Component.literal("No"))
-                    .setTooltip(Component.literal("Outlines becomes smaller. Chest outlines look better with this enabled, but outlines on barrels and shulker boxes are not visible"))
+                    .setTooltip(Component.literal("Outlines becomes smaller. Chest outlines look better with this enabled, but outlines on barrels and shulker boxes are not visible."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.slimOutlines = newValue)
+                    .setRequirement(renderOutlines::getValue)
                     .build());
 
             rendering.addEntry(entryBuilder.startFloatField(Component.literal("Outline Thickness"), ModConfig.INSTANCE.outlineThickness)
@@ -50,6 +50,7 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setMax(4)
                     .setTooltip(Component.literal("How thick outlines will be."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.outlineThickness = newValue)
+                    .setRequirement(renderOutlines::getValue)
                     .build());
 
             ConfigCategory controls = builder.getOrCreateCategory(Component.literal("Controls"));

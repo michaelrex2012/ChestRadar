@@ -167,9 +167,10 @@ public class ChestRadarClient implements ClientModInitializer {
 				VertexConsumer lineBuffer = coreBufferSource.getBuffer(RenderTypes.lines());
 				PoseStack.Pose pose = poseStack.last();
 
-				if (!ModConfig.INSTANCE.slimOutlines) {
+				if (!ModConfig.INSTANCE.renderOutlines){}
+				else if (!ModConfig.INSTANCE.slimOutlines && !ModConfig.INSTANCE.renderOutlines) {
 					drawSafeBox(pose, lineBuffer, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, r, g, b, 1.0f);
-				} else {
+				} else if (ModConfig.INSTANCE.renderOutlines) {
 					drawSafeBox(pose, lineBuffer, 0.05f, 0.0f, 0.05f, 0.95f, 0.9f, 0.95f, r, g, b, 1.0f);
 				}
 
