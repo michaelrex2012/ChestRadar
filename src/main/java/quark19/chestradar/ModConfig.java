@@ -19,6 +19,7 @@ public class ModConfig {
         public boolean toggleMode = false;
         public float outlineThickness = 2.0f;
         public boolean renderOutlines = true;
+        public boolean textLocation = true;
     }
 
     public static void load() {

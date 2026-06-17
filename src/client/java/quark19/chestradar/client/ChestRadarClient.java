@@ -168,7 +168,7 @@ public class ChestRadarClient implements ClientModInitializer {
 				PoseStack.Pose pose = poseStack.last();
 
 				if (!ModConfig.INSTANCE.renderOutlines){}
-				else if (!ModConfig.INSTANCE.slimOutlines && !ModConfig.INSTANCE.renderOutlines) {
+				else if (!ModConfig.INSTANCE.slimOutlines && ModConfig.INSTANCE.renderOutlines) {
 					drawSafeBox(pose, lineBuffer, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, r, g, b, 1.0f);
 				} else if (ModConfig.INSTANCE.renderOutlines) {
 					drawSafeBox(pose, lineBuffer, 0.05f, 0.0f, 0.05f, 0.95f, 0.9f, 0.95f, r, g, b, 1.0f);
@@ -177,7 +177,12 @@ public class ChestRadarClient implements ClientModInitializer {
 				poseStack.popPose();
 
 				poseStack.pushPose();
-				poseStack.translate(pos.getX() - cameraPos.x + 0.5, pos.getY() - cameraPos.y + 1.25, pos.getZ() - cameraPos.z + 0.5);
+
+				if (ModConfig.INSTANCE.textLocation) {
+					poseStack.translate(pos.getX() - cameraPos.x + 0.5, pos.getY() - cameraPos.y + 0.5625, pos.getZ() - cameraPos.z + 0.5);
+				} else {
+					poseStack.translate(pos.getX() - cameraPos.x + 0.5, pos.getY() - cameraPos.y + 1.5, pos.getZ() - cameraPos.z + 0.5);
+				}
 
 				poseStack.mulPose(context.gameRenderer().getMainCamera().rotation());
 				poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));

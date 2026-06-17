@@ -34,6 +34,13 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.renderOutlines = newValue)
                     .build();
 
+            rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Text Location"), ModConfig.INSTANCE.textLocation)
+                    .setDefaultValue(true)
+                    .setYesNoTextSupplier(bool -> bool ? Component.literal("Center") : Component.literal("Above"))
+                    .setTooltip(Component.literal("'Center' renders text in the center of blocks. 'Above' renders text above blocks"))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.textLocation = newValue)
+                    .build());
+
             rendering.addEntry(renderOutlines);
 
             rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Slim Outlines"), ModConfig.INSTANCE.slimOutlines)
