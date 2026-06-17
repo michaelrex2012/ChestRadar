@@ -29,7 +29,13 @@ public class ModMenuIntegration implements ModMenuApi {
 
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
             rendering.addEntry(entryBuilder.startSubCategory(Component.literal("Outline")).build());
-            
+
+            rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Render Outlines"), ModConfig.INSTANCE.renderOutlines)
+                    .setDefaultValue(true)
+                    .setYesNoTextSupplier(bool -> bool ? Component.literal("Yes") : Component.literal("No"))
+                    .setTooltip(Component.literal("If outlines should be rendered."))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.renderOutlines = newValue)
+                    .build());
 
             rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Slim Outlines"), ModConfig.INSTANCE.slimOutlines)
                     .setDefaultValue(false)
