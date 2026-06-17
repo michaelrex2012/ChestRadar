@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +32,6 @@ public class ChestRadar implements ModInitializer {
 			if (targetStack.isEmpty()) return;
 
 			Map<BlockPos, Integer> chestData = new HashMap<>();
-
 			int SCAN_RADIUS = ModConfig.INSTANCE.scanRadius;
 
 			BlockPos playerPos = player.blockPosition();
@@ -39,28 +39,49 @@ public class ChestRadar implements ModInitializer {
 			BlockPos maxPos = playerPos.offset(SCAN_RADIUS, SCAN_RADIUS, SCAN_RADIUS);
 
 			context.server().execute(() -> {
-				for (BlockPos pos : BlockPos.betweenClosed(minPos, maxPos)) {
-					BlockEntity blockEntity = world.getBlockEntity(pos);
+				// 1. Convert block coordinates to chunk coordinates
+				int minChunkX = minPos.getX() >> 4;
+				int maxChunkX = maxPos.getX() >> 4;
+				int minChunkZ = minPos.getZ() >> 4;
+				int maxChunkZ = maxPos.getZ() >> 4;
 
-					if (blockEntity instanceof Container container) {
-						int totalCount = 0;
+				// 2. Iterate only over the chunks within our radius
+				for (int cX = minChunkX; cX <= maxChunkX; cX++) {
+					for (int cZ = minChunkZ; cZ <= maxChunkZ; cZ++) {
 
-						// Loop through all slots in the inventory
-						for (int i = 0; i < container.getContainerSize(); i++) {
-							ItemStack slotStack = container.getItem(i);
+						// Safety: Only check chunks that are currently loaded to prevent lag spikes
+						if (world.hasChunk(cX, cZ)) {
+							LevelChunk chunk = world.getChunk(cX, cZ);
 
-							// Check if the item matches what the player is holding
-							if (!slotStack.isEmpty() && ItemStack.isSameItem(targetStack, slotStack)) {
-								totalCount += slotStack.getCount();
+							// 3. Directly access the chunk's pre-made list of BlockEntities
+							for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
+								BlockPos pos = entry.getKey();
+
+								// 4. Verify the entity is actually inside our exact 3D radius box
+								if (pos.getX() >= minPos.getX() && pos.getX() <= maxPos.getX() &&
+										pos.getY() >= minPos.getY() && pos.getY() <= maxPos.getY() &&
+										pos.getZ() >= minPos.getZ() && pos.getZ() <= maxPos.getZ()) {
+
+									BlockEntity blockEntity = entry.getValue();
+									if (blockEntity instanceof Container container) {
+										int totalCount = 0;
+
+										for (int i = 0; i < container.getContainerSize(); i++) {
+											ItemStack slotStack = container.getItem(i);
+											if (!slotStack.isEmpty() && ItemStack.isSameItem(targetStack, slotStack)) {
+												totalCount += slotStack.getCount();
+											}
+										}
+
+										if (totalCount > 0) {
+											chestData.put(pos.immutable(), totalCount);
+										}
+									}
+								}
 							}
-						}
-
-						if (totalCount > 0) {
-							chestData.put(pos.immutable(), totalCount);
 						}
 					}
 				}
-
 
 				if (!chestData.isEmpty()) {
 					context.responseSender().sendPacket(new SearchResponsePayload(chestData));
