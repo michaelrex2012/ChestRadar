@@ -141,16 +141,21 @@ public class ChestRadarClient implements ClientModInitializer {
 			CHEST_CACHE.forEach((pos, count) -> {
 				float r, g, b;
 
-				if (count <= 1) {
+				float ri = ModConfig.INSTANCE.redAmount;
+				float yi = ModConfig.INSTANCE.yellowAmount;
+				float gi = ModConfig.INSTANCE.greenAmount;
+
+
+				if (count <= ri) {
 					r = 1.0f; g = 0.0f; b = 0.0f;
 				} else if (count <= 32) {
-					float t = (count - 1f) / 31f;
+					float t = (count - ri) / yi - 1f;
 
 					r = 1.0f;
 					g = t;
 					b = 0.0f;
-				} else if (count <= 64) {
-					float t = (count - 32f) / 32f;
+				} else if (count <= gi) {
+					float t = (count - yi) / yi;
 
 					r = 1.0f - t;
 					g = 1.0f;

@@ -21,6 +21,10 @@ public class ModConfig {
         public boolean renderOutlines = true;
         public boolean textLocation = true;
         public boolean enableMod = true;
+
+        public int redAmount = 1;
+        public int yellowAmount = 32;
+        public int greenAmount = 64;
     }
 
     public static void load() {

@@ -67,6 +67,33 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setRequirement(renderOutlines::getValue)
                     .build());
 
+            var colors = entryBuilder.startSubCategory(Component.literal("Color Gradient"))
+                    .setExpanded(false)
+                    .setTooltip(Component.literal("Value of items in a container for different colors."));
+
+            colors.add(entryBuilder.startIntField(Component.literal("Red Amount"), ModConfig.INSTANCE.redAmount)
+                    .setDefaultValue(1)
+                    .setMin(1)
+                    .setMax(1728)
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.redAmount = newValue)
+                    .build());
+
+            colors.add(entryBuilder.startIntField(Component.literal("Yellow Amount"), ModConfig.INSTANCE.yellowAmount)
+                    .setDefaultValue(32)
+                    .setMin(1)
+                    .setMax(1728)
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.yellowAmount = newValue)
+                    .build());
+
+            colors.add(entryBuilder.startIntField(Component.literal("Green Amount"), ModConfig.INSTANCE.greenAmount)
+                    .setDefaultValue(64)
+                    .setMin(1)
+                    .setMax(1728)
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.greenAmount = newValue)
+                    .build());
+
+            rendering.addEntry(colors.build());
+
             ConfigCategory controls = builder.getOrCreateCategory(Component.literal("Controls"));
 
             controls.addEntry(entryBuilder.startBooleanToggle(Component.literal("Search Keybind Mode"), ModConfig.INSTANCE.toggleMode)
