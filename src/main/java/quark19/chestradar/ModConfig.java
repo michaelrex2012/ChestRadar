@@ -20,6 +20,7 @@ public class ModConfig {
         public float outlineThickness = 2.0f;
         public boolean renderOutlines = true;
         public boolean textLocation = true;
+        public boolean enableMod = true;
     }
 
     public static void load() {

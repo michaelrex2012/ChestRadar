@@ -17,6 +17,13 @@ public class ModMenuIntegration implements ModMenuApi {
             ConfigEntryBuilder entryBuilder = builder.entryBuilder();
             ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
 
+            general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Mod Functionality"), ModConfig.INSTANCE.enableMod)
+                    .setDefaultValue(true)
+                    .setYesNoTextSupplier(bool -> bool ? Component.literal("Enabled") : Component.literal("Disabled"))
+                    .setTooltip(Component.literal("If Chest Radar should be enabled."))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.enableMod = newValue)
+                    .build());
+
             general.addEntry(entryBuilder.startIntField(Component.literal("Scan Radius"), ModConfig.INSTANCE.scanRadius)
                     .setDefaultValue(24)
                     .setMin(8)
