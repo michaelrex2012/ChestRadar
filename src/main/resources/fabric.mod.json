@@ -9,7 +9,7 @@
 	],
 	"contact": {
 		"homepage": "https://modrinth.com/project/chest-radar",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/michaelrex2012/ChestRadar"
 	},
 	"license": "MIT",
 	"icon": "assets/chestradar/icon.png",
