@@ -66,7 +66,6 @@ public class ChestRadarClient implements ClientModInitializer {
 
 			if (!ModConfig.INSTANCE.enableMod) {CHEST_CACHE.clear(); return;}
 
-			ModConfig.load();
 			boolean useToggle = ModConfig.INSTANCE.toggleMode;
 
 			if (useToggle) {
