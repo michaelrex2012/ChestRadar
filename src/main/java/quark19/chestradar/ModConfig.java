@@ -15,7 +15,7 @@ public class ModConfig {
 
     public static class Instance {
         public int scanRadius = 24;
-        public boolean slimOutlines = false;
+        public boolean slimOutlines = true;
         public boolean toggleMode = false;
         public float outlineThickness = 2.0f;
         public boolean renderOutlines = true;

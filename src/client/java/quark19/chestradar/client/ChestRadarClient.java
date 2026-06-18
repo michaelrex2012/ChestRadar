@@ -39,8 +39,6 @@ public class ChestRadarClient implements ClientModInitializer {
 	private boolean wasPressedLastTick = false;
 	private boolean isToggleActive = false;
 
-	private static final Logger LOGGER = LogUtils.getLogger();
-
 	private static final ByteBufferBuilder TEXT_BYTE_BUFFER = new ByteBufferBuilder(1024);
 
 	@Override
