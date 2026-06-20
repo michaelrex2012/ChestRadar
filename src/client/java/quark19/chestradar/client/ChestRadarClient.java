@@ -38,6 +38,7 @@ public class ChestRadarClient implements ClientModInitializer {
 	private int scanCooldown = 0;
 	private boolean wasPressedLastTick = false;
 	private boolean isToggleActive = false;
+	private ItemStack lastHeldItem = ItemStack.EMPTY;
 
 	private static final ByteBufferBuilder TEXT_BYTE_BUFFER = new ByteBufferBuilder(1024);
 
@@ -62,9 +63,20 @@ public class ChestRadarClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.player == null) return;
 
-			if (!ModConfig.INSTANCE.enableMod) {CHEST_CACHE.clear(); return;}
+			if (!ModConfig.INSTANCE.enableMod) {
+				CHEST_CACHE.clear();
+				lastHeldItem = ItemStack.EMPTY;
+				return;
+			}
 
+			ItemStack heldItem = client.player.getMainHandItem();
 			boolean useToggle = ModConfig.INSTANCE.toggleMode;
+
+			if (!ItemStack.isSameItem(heldItem, lastHeldItem)) {
+				CHEST_CACHE.clear();
+				scanCooldown = 0;
+				lastHeldItem = heldItem.copy();
+			}
 
 			if (useToggle) {
 				wasPressedLastTick = false;
@@ -80,7 +92,7 @@ public class ChestRadarClient implements ClientModInitializer {
 
 				if (isToggleActive) {
 					if (scanCooldown <= 0) {
-						ItemStack heldItem = client.player.getMainHandItem();
+						heldItem = client.player.getMainHandItem();
 						if (!heldItem.isEmpty()) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
 						} else {
@@ -99,7 +111,7 @@ public class ChestRadarClient implements ClientModInitializer {
 					wasPressedLastTick = true;
 
 					if (scanCooldown <= 0) {
-						ItemStack heldItem = client.player.getMainHandItem();
+						heldItem = client.player.getMainHandItem();
 						if (!heldItem.isEmpty()) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
 						} else {
