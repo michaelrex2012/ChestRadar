@@ -44,8 +44,10 @@ public class ChestRadarClient implements ClientModInitializer {
 		ModConfig.load();
 
 		ClientPlayNetworking.registerGlobalReceiver(SearchResponsePayload.TYPE, (payload, context) -> {
-			CHEST_CACHE.clear();
-			CHEST_CACHE.putAll(payload.chestData());
+			context.client().execute(() -> {
+				CHEST_CACHE.clear();
+				CHEST_CACHE.putAll(payload.chestData());
+			});
 		});
 
 		KeyMapping.Category ChestRadarKeyMappingCategory = new KeyMapping.Category(Identifier.fromNamespaceAndPath("chestradar", "storage"));

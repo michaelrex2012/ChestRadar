@@ -83,9 +83,7 @@ public class ChestRadar implements ModInitializer {
 					}
 				}
 
-				if (!chestData.isEmpty()) {
-					context.responseSender().sendPacket(new SearchResponsePayload(chestData));
-				}
+				context.responseSender().sendPacket(new SearchResponsePayload(chestData));
 			});
 		});
 	}
