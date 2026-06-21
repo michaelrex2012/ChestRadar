@@ -15,6 +15,7 @@ Same as installing any other fabric mod.
 
 * [Cloth Config API](https://modrinth.com/mod/cloth-config)
 * [Fabric API](https://modrinth.com/mod/fabric-api)
+* [Mod Menu](https://modrinth.com/mod/modmenu) (Not required, but highly recommended for setting access)
 
 Mutiplayer Note: If you want to play on a server or LAN with Chest Radar, it must be first installed on the server and client. If it is not installed on both the mods functionality will be disabled.
 
