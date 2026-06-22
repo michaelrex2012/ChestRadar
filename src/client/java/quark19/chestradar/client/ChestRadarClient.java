@@ -97,7 +97,7 @@ public class ChestRadarClient implements ClientModInitializer {
 						} else {
 							CHEST_CACHE.clear();
 						}
-						scanCooldown = 10;
+						scanCooldown = 0;
 					} else {
 						scanCooldown--;
 					}
@@ -116,7 +116,7 @@ public class ChestRadarClient implements ClientModInitializer {
 						} else {
 							CHEST_CACHE.clear();
 						}
-						scanCooldown = 10;
+						scanCooldown = 0;
 					} else {
 						scanCooldown--;
 					}

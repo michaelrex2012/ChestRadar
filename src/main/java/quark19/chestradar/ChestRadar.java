@@ -1,6 +1,7 @@
 package quark19.chestradar;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
@@ -13,9 +14,11 @@ import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class ChestRadar implements ModInitializer {
 	public static final String MOD_ID = "chestradar";
+	private static final Map<UUID, Integer> COOLDOWN_MAP = new HashMap<>();
 
 	@Override
 	public void onInitialize() {
@@ -24,21 +27,38 @@ public class ChestRadar implements ModInitializer {
 		PayloadTypeRegistry.playC2S().register(SearchRequestPayload.TYPE, SearchRequestPayload.CODEC);
 		PayloadTypeRegistry.playS2C().register(SearchResponsePayload.TYPE, SearchResponsePayload.CODEC);
 
-		ServerPlayNetworking.registerGlobalReceiver(SearchRequestPayload.TYPE, (payload, context) -> {
-			ServerPlayer player = context.player();
-			ServerLevel world = player.level();
-			ItemStack targetStack = payload.stack();
+		// FIX 1: The timer MUST rely on the actual server clock (20 ticks a second), not packet arrivals!
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			COOLDOWN_MAP.entrySet().removeIf(entry -> {
+				int remaining = entry.getValue() - 1;
+				if (remaining <= 0) return true; // Clear out expired entries
+				entry.setValue(remaining);
+				return false;
+			});
+		});
 
+		ServerPlayNetworking.registerGlobalReceiver(SearchRequestPayload.TYPE, (payload, context) -> {
+			ItemStack targetStack = payload.stack();
 			if (targetStack.isEmpty()) return;
 
-			Map<BlockPos, Integer> chestData = new HashMap<>();
-			int SCAN_RADIUS = ModConfig.INSTANCE.scanRadius;
-
-			BlockPos playerPos = player.blockPosition();
-			BlockPos minPos = playerPos.offset(-SCAN_RADIUS, -SCAN_RADIUS, -SCAN_RADIUS);
-			BlockPos maxPos = playerPos.offset(SCAN_RADIUS, SCAN_RADIUS, SCAN_RADIUS);
-
+			// FIX 2: Move EVERYTHING into the main thread execution block.
+			// Reading player position on the network thread causes massive desyncs!
 			context.server().execute(() -> {
+				ServerPlayer player = context.player();
+
+				// Run the firewall check securely on the main thread
+				if (!ChestRadar.tryScan(player)) {
+					return;
+				}
+
+				ServerLevel world = player.level();
+				Map<BlockPos, Integer> chestData = new HashMap<>();
+				int SCAN_RADIUS = ModConfig.INSTANCE.scanRadius;
+
+				BlockPos playerPos = player.blockPosition();
+				BlockPos minPos = playerPos.offset(-SCAN_RADIUS, -SCAN_RADIUS, -SCAN_RADIUS);
+				BlockPos maxPos = playerPos.offset(SCAN_RADIUS, SCAN_RADIUS, SCAN_RADIUS);
+
 				// 1. Convert block coordinates to chunk coordinates
 				int minChunkX = minPos.getX() >> 4;
 				int maxChunkX = maxPos.getX() >> 4;
@@ -86,5 +106,14 @@ public class ChestRadar implements ModInitializer {
 				context.responseSender().sendPacket(new SearchResponsePayload(chestData));
 			});
 		});
+	}
+
+	public static boolean tryScan(ServerPlayer player) {
+		UUID uuid = player.getUUID();
+		if (COOLDOWN_MAP.containsKey(uuid)) {
+			return false; // Still on cooldown! Reject packet.
+		}
+		COOLDOWN_MAP.put(uuid, 10); // Apply 10-tick server-side limit
+		return true;
 	}
 }
