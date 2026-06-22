@@ -45,8 +45,14 @@ public class ChestRadarClient implements ClientModInitializer {
 
 		ClientPlayNetworking.registerGlobalReceiver(SearchResponsePayload.TYPE, (payload, context) -> {
 			context.client().execute(() -> {
+				// Verify if the user is still actively scanning before applying the data
+				boolean useToggle = ModConfig.INSTANCE.toggleMode;
+				boolean isScanning = useToggle ? isToggleActive : highlightKeyMapping.isDown();
+
 				CHEST_CACHE.clear();
-				CHEST_CACHE.putAll(payload.chestData());
+				if (isScanning) {
+					CHEST_CACHE.putAll(payload.chestData());
+				}
 			});
 		});
 
