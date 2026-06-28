@@ -111,9 +111,9 @@ public class ChestRadar implements ModInitializer {
 	public static boolean tryScan(ServerPlayer player) {
 		UUID uuid = player.getUUID();
 		if (COOLDOWN_MAP.containsKey(uuid)) {
-			return false; // Still on cooldown! Reject packet.
+			return false;
 		}
-		COOLDOWN_MAP.put(uuid, 10); // Apply 10-tick server-side limit
+		COOLDOWN_MAP.put(uuid, 10);
 		return true;
 	}
 }

@@ -25,6 +25,8 @@ public class ModConfig {
         public int redAmount = 1;
         public int yellowAmount = 32;
         public int greenAmount = 64;
+
+        public int scanCooldown = 10;
     }
 
     public static void load() {

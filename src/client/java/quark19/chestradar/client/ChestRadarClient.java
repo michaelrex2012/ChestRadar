@@ -24,18 +24,20 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.joml.Matrix4f;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ChestRadarClient implements ClientModInitializer {
 	public static KeyMapping highlightKeyMapping;
 
-	public static final Map<BlockPos, Integer> CHEST_CACHE = new HashMap<>();
+	public static final Map<BlockPos, ChestHistory> CHEST_CACHE = new HashMap<>();
 
 	private int scanCooldown = 0;
 	private boolean wasPressedLastTick = false;
 	private boolean isToggleActive = false;
-	private ItemStack lastHeldItem = ItemStack.EMPTY;
+	private long currentClientTick = 0;
+	private static int seconds = 4;
 
 	private static final ByteBufferBuilder TEXT_BYTE_BUFFER = new ByteBufferBuilder(1024);
 
@@ -45,14 +47,12 @@ public class ChestRadarClient implements ClientModInitializer {
 
 		ClientPlayNetworking.registerGlobalReceiver(SearchResponsePayload.TYPE, (payload, context) -> {
 			context.client().execute(() -> {
-				// Verify if the user is still actively scanning before applying the data
-				boolean useToggle = ModConfig.INSTANCE.toggleMode;
-				boolean isScanning = useToggle ? isToggleActive : highlightKeyMapping.isDown();
+				CHEST_CACHE.keySet().retainAll(payload.chestData().keySet());
 
-				CHEST_CACHE.clear();
-				if (isScanning) {
-					CHEST_CACHE.putAll(payload.chestData());
-				}
+				payload.chestData().forEach((pos, count) -> {
+					ChestHistory history = CHEST_CACHE.computeIfAbsent(pos, k -> new ChestHistory(seconds));
+					history.addSnapshot(count, currentClientTick);
+				});
 			});
 		});
 
@@ -66,22 +66,14 @@ public class ChestRadarClient implements ClientModInitializer {
 		));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (!client.isPaused()) {
+				currentClientTick++;
+			}
+
 			if (client.player == null) return;
 
-			if (!ModConfig.INSTANCE.enableMod) {
-				CHEST_CACHE.clear();
-				lastHeldItem = ItemStack.EMPTY;
-				return;
-			}
-
-			ItemStack heldItem = client.player.getMainHandItem();
+			if (!ModConfig.INSTANCE.enableMod) {CHEST_CACHE.clear(); return;}
 			boolean useToggle = ModConfig.INSTANCE.toggleMode;
-
-			if (!ItemStack.isSameItem(heldItem, lastHeldItem)) {
-				CHEST_CACHE.clear();
-				scanCooldown = 0;
-				lastHeldItem = heldItem.copy();
-			}
 
 			if (useToggle) {
 				wasPressedLastTick = false;
@@ -97,13 +89,13 @@ public class ChestRadarClient implements ClientModInitializer {
 
 				if (isToggleActive) {
 					if (scanCooldown <= 0) {
-						heldItem = client.player.getMainHandItem();
+						ItemStack heldItem = client.player.getMainHandItem();
 						if (!heldItem.isEmpty()) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
 						} else {
 							CHEST_CACHE.clear();
 						}
-						scanCooldown = 0;
+						scanCooldown = 10;
 					} else {
 						scanCooldown--;
 					}
@@ -116,18 +108,17 @@ public class ChestRadarClient implements ClientModInitializer {
 					wasPressedLastTick = true;
 
 					if (scanCooldown <= 0) {
-						heldItem = client.player.getMainHandItem();
+						ItemStack heldItem = client.player.getMainHandItem();
 						if (!heldItem.isEmpty()) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
 						} else {
 							CHEST_CACHE.clear();
 						}
-						scanCooldown = 0;
+						scanCooldown = 10;
 					} else {
 						scanCooldown--;
 					}
 				} else {
-					// Wipe cache immediately upon key release
 					if (wasPressedLastTick) {
 						CHEST_CACHE.clear();
 						scanCooldown = 0;
@@ -152,7 +143,11 @@ public class ChestRadarClient implements ClientModInitializer {
 
 			MultiBufferSource.BufferSource textBufferSource = MultiBufferSource.immediate(TEXT_BYTE_BUFFER);
 
-			CHEST_CACHE.forEach((pos, count) -> {
+			CHEST_CACHE.forEach((pos, chestHistory) -> {
+				int currentCount = chestHistory.getCurrentCount();
+				float deltaPerSecond = chestHistory.getDeltaPerSecond();
+
+
 				float r, g, b;
 
 				float ri = ModConfig.INSTANCE.redAmount;
@@ -160,16 +155,16 @@ public class ChestRadarClient implements ClientModInitializer {
 				float gi = ModConfig.INSTANCE.greenAmount;
 
 
-				if (count <= ri) {
+				if (currentCount <= ri) {
 					r = 1.0f; g = 0.0f; b = 0.0f;
-				} else if (count <= 32) {
-					float t = (count - ri) / yi - 1f;
+				} else if (currentCount <= 32) {
+					float t = (currentCount - ri) / yi - 1f;
 
 					r = 1.0f;
 					g = t;
 					b = 0.0f;
-				} else if (count <= gi) {
-					float t = (count - yi) / yi;
+				} else if (currentCount <= gi) {
+					float t = (currentCount - yi) / yi;
 
 					r = 1.0f - t;
 					g = 1.0f;
@@ -213,7 +208,7 @@ public class ChestRadarClient implements ClientModInitializer {
 
 				Matrix4f textMatrix = poseStack.last().pose();
 				Font font = client.font;
-				String text = String.valueOf(count);
+				String text = String.valueOf(currentCount);
 				float textWidth = font.width(text);
 
 				font.drawInBatch(
@@ -228,6 +223,25 @@ public class ChestRadarClient implements ClientModInitializer {
 						0x40000000,
 						0xF000F0
 				);
+
+				// Change '5' in '>= 5' to the average tick setting var!
+				if (deltaPerSecond != 0.0f && chestHistory.isWindowFull()) {
+					String deltaText = (deltaPerSecond > 0 ? "+" : "") + String.format("%.1f/s", deltaPerSecond);
+					int deltaColor = deltaPerSecond > 0 ? 0xFF00FF00 : 0xFFFF0000;
+
+					font.drawInBatch(
+							deltaText,
+							-font.width(deltaText) / 2f,
+							font.lineHeight,
+							deltaColor,
+							false,
+							textMatrix,
+							textBufferSource,
+							Font.DisplayMode.SEE_THROUGH,
+							0x40000000,
+							0xF000F0
+					);
+				}
 
 				poseStack.popPose();
 			});
@@ -288,5 +302,59 @@ public class ChestRadarClient implements ClientModInitializer {
 				.setColor(r, g, b, a)
 				.setNormal(1.0f, 0.0f, 0.0f)
 				.setLineWidth(thickness);
+	}
+
+	public static class ChestHistory {
+		private final ArrayDeque<Snapshot> window = new ArrayDeque<>();
+		private final long maxTicks;
+
+		public ChestHistory(int seconds) {
+			this.maxTicks = seconds * 20L; // 20 Ticks Per Second
+		}
+
+		public void addSnapshot(int count, long currentTick) {
+			window.addLast(new Snapshot(count, currentTick));
+
+			while (!window.isEmpty() && (currentTick - window.peekFirst().tick() > maxTicks)) {
+				window.removeFirst();
+			}
+		}
+
+		public boolean isWindowFull() {
+			if (window.size() < 2) return false;
+
+			long oldestTick = window.peekFirst().tick();
+			long newestTick = window.peekLast().tick();
+			long actualSpan = newestTick - oldestTick;
+
+			// Allow a tiny 10-tick (0.5s) buffer threshold so it displays
+			// smoothly as soon as the final packet arriving completes the window duration
+			return actualSpan >= (maxTicks - 10);
+		}
+
+		public void clear()	{
+			window.clear();
+		}
+
+		public int getCurrentCount() {
+			if (window.isEmpty()) return 0;
+			return window.peekLast().count();
+		}
+
+		public float getDeltaPerSecond() {
+			if (window.size() < 2) return 0.0f;
+
+			Snapshot oldest = window.peekFirst();
+			Snapshot newest = window.peekLast();
+
+			long tickDelta = newest.tick() - oldest.tick();
+			if (tickDelta <= 0) return 0.0f;
+
+			int countDelta = newest.count() - oldest.count();
+
+			return ((float) countDelta / tickDelta) * 20.0f;
+		}
+
+		private record Snapshot(int count, long tick) {}
 	}
 }
