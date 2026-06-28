@@ -28,8 +28,16 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setDefaultValue(24)
                     .setMin(8)
                     .setMax(32)
-                    .setTooltip(Component.literal("Radius of blocks the mod will search (Singleplayer or server host only)."))
+                    .setTooltip(Component.literal("Radius of blocks the mod will search (Singleplayer or server-side only)."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanRadius = newValue)
+                    .build());
+
+            general.addEntry(entryBuilder.startIntField(Component.literal("Scan Cooldown"), ModConfig.INSTANCE.scanCooldown)
+                    .setDefaultValue(10)
+                    .setMin(0)
+                    .setMax(20)
+                    .setTooltip(Component.literal("Number in ticks to wait bettween scans. Lower numbers are more responsive but use more processing power. (Singleplayer or server-side only)"))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanCooldown = newValue)
                     .build());
 
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));

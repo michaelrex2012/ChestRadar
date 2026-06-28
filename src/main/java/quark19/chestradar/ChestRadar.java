@@ -27,11 +27,10 @@ public class ChestRadar implements ModInitializer {
 		PayloadTypeRegistry.playC2S().register(SearchRequestPayload.TYPE, SearchRequestPayload.CODEC);
 		PayloadTypeRegistry.playS2C().register(SearchResponsePayload.TYPE, SearchResponsePayload.CODEC);
 
-		// FIX 1: The timer MUST rely on the actual server clock (20 ticks a second), not packet arrivals!
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			COOLDOWN_MAP.entrySet().removeIf(entry -> {
 				int remaining = entry.getValue() - 1;
-				if (remaining <= 0) return true; // Clear out expired entries
+				if (remaining <= 0) return true;
 				entry.setValue(remaining);
 				return false;
 			});
@@ -41,12 +40,9 @@ public class ChestRadar implements ModInitializer {
 			ItemStack targetStack = payload.stack();
 			if (targetStack.isEmpty()) return;
 
-			// FIX 2: Move EVERYTHING into the main thread execution block.
-			// Reading player position on the network thread causes massive desyncs!
 			context.server().execute(() -> {
 				ServerPlayer player = context.player();
 
-				// Run the firewall check securely on the main thread
 				if (!ChestRadar.tryScan(player)) {
 					return;
 				}
@@ -59,25 +55,20 @@ public class ChestRadar implements ModInitializer {
 				BlockPos minPos = playerPos.offset(-SCAN_RADIUS, -SCAN_RADIUS, -SCAN_RADIUS);
 				BlockPos maxPos = playerPos.offset(SCAN_RADIUS, SCAN_RADIUS, SCAN_RADIUS);
 
-				// 1. Convert block coordinates to chunk coordinates
 				int minChunkX = minPos.getX() >> 4;
 				int maxChunkX = maxPos.getX() >> 4;
 				int minChunkZ = minPos.getZ() >> 4;
 				int maxChunkZ = maxPos.getZ() >> 4;
 
-				// 2. Iterate only over the chunks within our radius
 				for (int cX = minChunkX; cX <= maxChunkX; cX++) {
 					for (int cZ = minChunkZ; cZ <= maxChunkZ; cZ++) {
 
-						// Safety: Only check chunks that are currently loaded to prevent lag spikes
 						if (world.hasChunk(cX, cZ)) {
 							LevelChunk chunk = world.getChunk(cX, cZ);
 
-							// 3. Directly access the chunk's pre-made list of BlockEntities
 							for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
 								BlockPos pos = entry.getKey();
 
-								// 4. Verify the entity is actually inside our exact 3D radius box
 								if (pos.getX() >= minPos.getX() && pos.getX() <= maxPos.getX() &&
 										pos.getY() >= minPos.getY() && pos.getY() <= maxPos.getY() &&
 										pos.getZ() >= minPos.getZ() && pos.getZ() <= maxPos.getZ()) {
@@ -113,7 +104,7 @@ public class ChestRadar implements ModInitializer {
 		if (COOLDOWN_MAP.containsKey(uuid)) {
 			return false;
 		}
-		COOLDOWN_MAP.put(uuid, 10);
+		COOLDOWN_MAP.put(uuid, ModConfig.INSTANCE.scanCooldown);
 		return true;
 	}
 }
