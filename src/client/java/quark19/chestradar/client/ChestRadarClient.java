@@ -37,7 +37,7 @@ public class ChestRadarClient implements ClientModInitializer {
 	private boolean wasPressedLastTick = false;
 	private boolean isToggleActive = false;
 	private long currentClientTick = 0;
-	private static int seconds = 4;
+	private static int seconds = Math.round(ModConfig.INSTANCE.scanCooldown * ModConfig.INSTANCE.secondRatio);
 
 	private static final ByteBufferBuilder TEXT_BYTE_BUFFER = new ByteBufferBuilder(1024);
 
@@ -74,7 +74,7 @@ public class ChestRadarClient implements ClientModInitializer {
 
 			if (!ModConfig.INSTANCE.enableMod) {CHEST_CACHE.clear(); return;}
 			boolean useToggle = ModConfig.INSTANCE.toggleMode;
-			seconds = ModConfig.INSTANCE.scanCooldown;
+			seconds = Math.round(ModConfig.INSTANCE.scanCooldown * ModConfig.INSTANCE.secondRatio);
 
 			if (useToggle) {
 				wasPressedLastTick = false;
@@ -226,7 +226,7 @@ public class ChestRadarClient implements ClientModInitializer {
 				);
 
 				// Change '5' in '>= 5' to the average tick setting var!
-				if (deltaPerSecond != 0.0f && chestHistory.isWindowFull()) {
+				if (deltaPerSecond != 0.0f && chestHistory.isWindowFull() && ModConfig.INSTANCE.doItemDelta) {
 					String deltaText = (deltaPerSecond > 0 ? "+" : "") + String.format("%.1f/s", deltaPerSecond);
 					int deltaColor = deltaPerSecond > 0 ? 0xFF00FF00 : 0xFFFF0000;
 

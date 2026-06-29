@@ -4,6 +4,7 @@ import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import me.shedaniel.clothconfig2.api.*;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import quark19.chestradar.ModConfig;
 
 public class ModMenuIntegration implements ModMenuApi {
@@ -16,6 +17,8 @@ public class ModMenuIntegration implements ModMenuApi {
 
             ConfigEntryBuilder entryBuilder = builder.entryBuilder();
             ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
+
+            general.setDescription(new FormattedText[]{FormattedText.of("Base functionality behaviour")});
 
             general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Mod Functionality"), ModConfig.INSTANCE.enableMod)
                     .setDefaultValue(true)
@@ -40,7 +43,24 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanCooldown = newValue)
                     .build());
 
+            general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Item Deltas"), ModConfig.INSTANCE.doItemDelta)
+                    .setDefaultValue(true)
+                    .setYesNoTextSupplier(bool -> bool ? Component.literal("Enabled") : Component.literal("Disabled"))
+                    .setTooltip(Component.literal("When enabled, text showing the amount of items drained or pulled per second will be displayed."))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.doItemDelta = newValue)
+                    .build());
+
+            general.addEntry(entryBuilder.startFloatField(Component.literal("History Size"), ModConfig.INSTANCE.secondRatio)
+                    .setDefaultValue(0.4f)
+                    .setMin(0.1f)
+                    .setMax(0.9f)
+                    .setTooltip(Component.literal("Best to leave as is. The ratio between Scan Cooldown and how many seconds past in chest cache history will be calculated in item delta averages. For example if this is 0.4 and Scan Cool down is 10, the total seconds in average calculation will be 4 seconds. Larger is more accurate but takes longer to update/display."))
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.secondRatio = newValue)
+                    .build());
+
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
+
+            rendering.setDescription(new FormattedText[]{FormattedText.of("Rendering of outlines and text")});
 
             var renderOutlines = entryBuilder.startBooleanToggle(Component.literal("Render Outlines"), ModConfig.INSTANCE.renderOutlines)
                     .setDefaultValue(true)
@@ -103,6 +123,8 @@ public class ModMenuIntegration implements ModMenuApi {
             rendering.addEntry(colors.build());
 
             ConfigCategory controls = builder.getOrCreateCategory(Component.literal("Controls"));
+
+            controls.setDescription(new FormattedText[]{FormattedText.of("Keybind behaviour")});
 
             controls.addEntry(entryBuilder.startBooleanToggle(Component.literal("Search Keybind Mode"), ModConfig.INSTANCE.toggleMode)
                     .setYesNoTextSupplier(bool -> bool ? Component.literal("Toggle") : Component.literal("Hold"))
