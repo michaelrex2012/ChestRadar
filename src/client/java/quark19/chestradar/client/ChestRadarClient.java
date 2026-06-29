@@ -245,7 +245,7 @@ public class ChestRadarClient implements ClientModInitializer {
 						0xF000F0
 				);
 
-				if (deltaPerSecond != 0.0f && chestHistory.isWindowFull() && ModConfig.INSTANCE.doItemDelta) {
+				if (deltaPerSecond != 0.0f && ModConfig.INSTANCE.doItemDelta) {
 					String deltaText = (deltaPerSecond > 0 ? "+" : "") + String.format("%.1f/s", deltaPerSecond);
 					int deltaColor = deltaPerSecond > 0 ? 0xFF00FF00 : 0xFFFF0000;
 
