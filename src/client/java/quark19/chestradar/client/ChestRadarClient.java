@@ -2,7 +2,6 @@ package quark19.chestradar.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.terraformersmc.modmenu.util.mod.Mod;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -54,7 +53,7 @@ public class ChestRadarClient implements ClientModInitializer {
 				CHEST_CACHE.keySet().retainAll(payload.chestData().keySet());
 
 				payload.chestData().forEach((pos, count) -> {
-					ChestHistory history = CHEST_CACHE.computeIfAbsent(pos, k -> new ChestHistory(seconds));
+					ChestHistory history = CHEST_CACHE.computeIfAbsent(pos, k -> new ChestHistory());
 					history.addSnapshot(count, currentClientTick);
 				});
 			});
@@ -338,7 +337,7 @@ public class ChestRadarClient implements ClientModInitializer {
 		private float smoothedRate = 0.0f;
 		private float rawRate = 0.0f;
 
-		public ChestHistory(int initialSeconds) {}
+		public ChestHistory() {}
 
 		public void addSnapshot(int count, long currentTick) {
 			window.addLast(new Snapshot(count, currentTick));
@@ -380,18 +379,6 @@ public class ChestRadarClient implements ClientModInitializer {
 			if (Math.abs(smoothedRate) < 0.01f) {
 				smoothedRate = 0.0f;
 			}
-		}
-
-		public boolean isWindowFull() {
-			if (window.size() < 2) return false;
-
-			long oldestTick = window.peekFirst().tick();
-			long newestTick = window.peekLast().tick();
-			long actualSpan = newestTick - oldestTick;
-
-			long currentMaxTicks = ChestRadarClient.seconds * 20L;
-
-			return actualSpan >= (currentMaxTicks - 10);
 		}
 
 		public void clear() {
