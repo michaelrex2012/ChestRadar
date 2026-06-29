@@ -10,8 +10,12 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import org.lwjgl.glfw.GLFW;
 import quark19.chestradar.ModConfig;
 import quark19.chestradar.SearchRequestPayload;
@@ -163,18 +167,60 @@ public class ChestRadarClient implements ClientModInitializer {
 			PoseStack poseStack = context.matrices();
 
 			var coreBufferSource = client.renderBuffers().bufferSource();
-
 			MultiBufferSource.BufferSource textBufferSource = MultiBufferSource.immediate(TEXT_BYTE_BUFFER);
 
 			CHEST_CACHE.forEach((pos, chestHistory) -> {
+				BlockState blockState = client.level.getBlockState(pos);
+
+				// Default bounds parameters for a standard 1x1x1 block layout
+				float minX = 0.0f, minY = 0.0f, minZ = 0.0f;
+				float maxX = 1.0f, maxY = 1.0f, maxZ = 1.0f;
+				double textOffsetX = 0.5;
+				double textOffsetZ = 0.5;
+
 				int currentCount = chestHistory.getCurrentCount();
 				float deltaPerSecond = chestHistory.getDeltaPerSecond();
 
+				// Double chest aggregation and double-box expanding logic
+				if (blockState.getBlock() instanceof ChestBlock) {
+					net.minecraft.world.level.block.state.properties.ChestType chestType =
+							blockState.getValue(ChestBlock.TYPE);
 
-				float r = 0.0f;
-				float g = 0.0f;
-				float b = 0.0f;
+					if (chestType != net.minecraft.world.level.block.state.properties.ChestType.SINGLE) {
+						// Get the precise direction of the neighboring chest half
+						Direction neighborDir = ChestBlock.getConnectedDirection(blockState);
+						BlockPos neighborPos = pos.relative(neighborDir);
 
+						if (chestType == net.minecraft.world.level.block.state.properties.ChestType.RIGHT) {
+							// If the LEFT half is also tracked in cache, let it handle the double-render.
+							// We only allow the RIGHT half to render if the LEFT half is untracked (empty).
+							if (CHEST_CACHE.containsKey(neighborPos)) {
+								return;
+							}
+						}
+
+						// If the neighbor half has cached data, merge its item tallies
+						if (CHEST_CACHE.containsKey(neighborPos)) {
+							ChestHistory neighborHistory = CHEST_CACHE.get(neighborPos);
+							currentCount += neighborHistory.getCurrentCount();
+							deltaPerSecond += neighborHistory.getDeltaPerSecond();
+						}
+
+						// Dynamically expand the bounding box towards the neighbor's real position
+						if (neighborDir == Direction.EAST) {
+							maxX = 2.0f; textOffsetX = 1.0;
+						} else if (neighborDir == Direction.WEST) {
+							minX = -1.0f; textOffsetX = 0.0;
+						} else if (neighborDir == Direction.SOUTH) {
+							maxZ = 2.0f; textOffsetZ = 1.0;
+						} else if (neighborDir == Direction.NORTH) {
+							minZ = -1.0f; textOffsetZ = 0.0;
+						}
+					}
+				}
+
+				// --- Color Calculation ---
+				float r = 0.0f, g = 0.0f, b = 0.0f;
 				float ri = ModConfig.INSTANCE.redAmount;
 				float yi = ModConfig.INSTANCE.yellowAmount;
 				float gi = ModConfig.INSTANCE.greenAmount;
@@ -184,15 +230,11 @@ public class ChestRadarClient implements ClientModInitializer {
 				} else if (currentCount <= yi) {
 					float range = yi - ri;
 					float t = range > 0 ? (currentCount - ri) / range : 1.0f;
-					r = 1.0f;
-					g = t;
-					b = 0.0f;
+					r = 1.0f; g = t; b = 0.0f;
 				} else if (currentCount <= gi) {
 					float range = gi - yi;
 					float t = range > 0 ? (currentCount - yi) / range : 1.0f;
-					r = 1.0f - t;
-					g = 1.0f;
-					b = 0.0f;
+					r = 1.0f - t; g = 1.0f; b = 0.0f;
 				} else {
 					r = 0.0f; g = 1.0f; b = 0.0f;
 				}
@@ -206,6 +248,7 @@ public class ChestRadarClient implements ClientModInitializer {
 				int ib = (int)(b * 255);
 				int hexColor = 0xFF000000 | (ir << 16) | (ig << 8) | ib;
 
+				// --- Render Outline ---
 				poseStack.pushPose();
 				poseStack.translate(pos.getX() - cameraPos.x, pos.getY() - cameraPos.y, pos.getZ() - cameraPos.z);
 
@@ -214,20 +257,19 @@ public class ChestRadarClient implements ClientModInitializer {
 
 				if (ModConfig.INSTANCE.renderOutlines) {
 					if (!ModConfig.INSTANCE.slimOutlines) {
-						drawSafeBox(pose, lineBuffer, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, r, g, b, 1.0f);
+						drawSafeBox(pose, lineBuffer, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, 1.0f);
 					} else {
-						drawSafeBox(pose, lineBuffer, 0.05f, 0.0f, 0.05f, 0.95f, 0.9f, 0.95f, r, g, b, 1.0f);
+						drawSafeBox(pose, lineBuffer, minX + 0.05f, minY, minZ + 0.05f, maxX - 0.05f, maxY - 0.1f, maxZ - 0.05f, r, g, b, 1.0f);
 					}
 				}
-
 				poseStack.popPose();
 
+				// --- Render Text Layer ---
 				poseStack.pushPose();
-
 				if (ModConfig.INSTANCE.textLocation) {
-					poseStack.translate(pos.getX() - cameraPos.x + 0.5, pos.getY() - cameraPos.y + 0.5625, pos.getZ() - cameraPos.z + 0.5);
+					poseStack.translate(pos.getX() - cameraPos.x + textOffsetX, pos.getY() - cameraPos.y + 0.5625, pos.getZ() - cameraPos.z + textOffsetZ);
 				} else {
-					poseStack.translate(pos.getX() - cameraPos.x + 0.5, pos.getY() - cameraPos.y + 1.5, pos.getZ() - cameraPos.z + 0.5);
+					poseStack.translate(pos.getX() - cameraPos.x + textOffsetX, pos.getY() - cameraPos.y + 1.5, pos.getZ() - cameraPos.z + textOffsetZ);
 				}
 
 				poseStack.mulPose(context.gameRenderer().getMainCamera().rotation());
@@ -242,15 +284,13 @@ public class ChestRadarClient implements ClientModInitializer {
 				font.drawInBatch(
 						text,
 						-textWidth / 2f,
-						0,
-						hexColor,
+						0, hexColor,
 						false,
 						textMatrix,
 						textBufferSource,
 						Font.DisplayMode.SEE_THROUGH,
 						0x40000000,
-						0xF000F0
-				);
+						0xF000F0);
 
 				if (deltaPerSecond != 0.0f && ModConfig.INSTANCE.doItemDelta) {
 					String deltaText = (deltaPerSecond > 0 ? "+" : "") + String.format("%.1f/s", deltaPerSecond);
@@ -259,15 +299,13 @@ public class ChestRadarClient implements ClientModInitializer {
 					font.drawInBatch(
 							deltaText,
 							-font.width(deltaText) / 2f,
-							font.lineHeight,
-							deltaColor,
+							font.lineHeight, deltaColor,
 							false,
 							textMatrix,
 							textBufferSource,
 							Font.DisplayMode.SEE_THROUGH,
 							0x40000000,
-							0xF000F0
-					);
+							0xF000F0);
 				}
 
 				poseStack.popPose();
