@@ -245,7 +245,6 @@ public class ChestRadarClient implements ClientModInitializer {
 						0xF000F0
 				);
 
-				// Change '5' in '>= 5' to the average tick setting var!
 				if (deltaPerSecond != 0.0f && chestHistory.isWindowFull() && ModConfig.INSTANCE.doItemDelta) {
 					String deltaText = (deltaPerSecond > 0 ? "+" : "") + String.format("%.1f/s", deltaPerSecond);
 					int deltaColor = deltaPerSecond > 0 ? 0xFF00FF00 : 0xFFFF0000;
@@ -328,23 +327,19 @@ public class ChestRadarClient implements ClientModInitializer {
 	public static class ChestHistory {
 		private final ArrayDeque<Snapshot> window = new ArrayDeque<>();
 
-		// NEW: This acts as our mathematical shock absorber
 		private float smoothedRate = 0.0f;
 
-		// REMOVED: maxTicks is no longer stored here so it can change dynamically!
 		public ChestHistory(int initialSeconds) {}
 
 		public void addSnapshot(int count, long currentTick) {
 			window.addLast(new Snapshot(count, currentTick));
 
-			// NEW: Dynamically fetch the current global 'seconds' setting from the outer class
 			long currentMaxTicks = ChestRadarClient.seconds * 20L;
 
 			while (!window.isEmpty() && (currentTick - window.peekFirst().tick() > currentMaxTicks)) {
 				window.removeFirst();
 			}
 
-			// Recalculate the smooth rate every time data updates
 			updateSmoothedRate();
 		}
 
@@ -358,16 +353,18 @@ public class ChestRadarClient implements ClientModInitializer {
 			if (tickDelta <= 0) return;
 
 			int countDelta = newest.count() - oldest.count();
-
-			// 1. Calculate the raw, jittery rate
 			float rawRate = ((float) countDelta / tickDelta) * 20.0f;
 
-			// 2. Smooth it out using an Exponential Moving Average
 			if (smoothedRate == 0.0f) {
-				smoothedRate = rawRate; // Fast-track initial value
+				smoothedRate = rawRate;
 			} else {
-				// Blend 15% of the raw update with 85% of history to absorb jitter
-				smoothedRate = smoothedRate + 0.15f * (rawRate - smoothedRate);
+				float alpha = Math.max(0.02f, 1.0f / window.size());
+
+				smoothedRate = smoothedRate + alpha * (rawRate - smoothedRate);
+			}
+
+			if (Math.abs(smoothedRate) < 0.01f) {
+				smoothedRate = 0.0f;
 			}
 		}
 
@@ -394,7 +391,6 @@ public class ChestRadarClient implements ClientModInitializer {
 		}
 
 		public float getDeltaPerSecond() {
-			// Return the smooth rate instead of the raw calculation!
 			return smoothedRate;
 		}
 
