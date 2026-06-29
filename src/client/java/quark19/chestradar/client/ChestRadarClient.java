@@ -178,7 +178,7 @@ public class ChestRadarClient implements ClientModInitializer {
 
 				if (currentCount <= ri) {
 					r = 1.0f; g = 0.0f; b = 0.0f;
-				} else if (currentCount <= 32) {
+				} else if (currentCount <= yi) {
 					float t = (currentCount - ri) / yi - 1f;
 
 					r = 1.0f;
