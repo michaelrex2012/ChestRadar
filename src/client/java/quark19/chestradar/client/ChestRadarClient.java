@@ -172,30 +172,35 @@ public class ChestRadarClient implements ClientModInitializer {
 				float deltaPerSecond = chestHistory.getDeltaPerSecond();
 
 
-				float r, g, b;
+				float r = 0.0f;
+				float g = 0.0f;
+				float b = 0.0f;
 
 				float ri = ModConfig.INSTANCE.redAmount;
 				float yi = ModConfig.INSTANCE.yellowAmount;
 				float gi = ModConfig.INSTANCE.greenAmount;
 
-
 				if (currentCount <= ri) {
 					r = 1.0f; g = 0.0f; b = 0.0f;
-				} else if (currentCount <= yi) {
-					float t = (currentCount - ri) / yi - 1f;
-
+				} else if (currentCount <= yi) { // FIX: Changed from hardcoded 32 to yi
+					float range = yi - ri;
+					float t = range > 0 ? (currentCount - ri) / range : 1.0f;
 					r = 1.0f;
 					g = t;
 					b = 0.0f;
 				} else if (currentCount <= gi) {
-					float t = (currentCount - yi) / yi;
-
+					float range = gi - yi;
+					float t = range > 0 ? (currentCount - yi) / range : 1.0f;
 					r = 1.0f - t;
 					g = 1.0f;
 					b = 0.0f;
 				} else {
 					r = 0.0f; g = 1.0f; b = 0.0f;
 				}
+
+				r = Math.max(0.0f, Math.min(1.0f, r));
+				g = Math.max(0.0f, Math.min(1.0f, g));
+				b = Math.max(0.0f, Math.min(1.0f, b));
 
 				int ir = (int)(r * 255);
 				int ig = (int)(g * 255);
