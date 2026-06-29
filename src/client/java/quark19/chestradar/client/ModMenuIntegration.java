@@ -104,21 +104,21 @@ public class ModMenuIntegration implements ModMenuApi {
             colors.add(entryBuilder.startIntField(Component.literal("Red Amount"), ModConfig.INSTANCE.redAmount)
                     .setDefaultValue(1)
                     .setMin(1)
-                    .setMax(1728)
+                    .setMax(3456)
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.redAmount = newValue)
                     .build());
 
             colors.add(entryBuilder.startIntField(Component.literal("Yellow Amount"), ModConfig.INSTANCE.yellowAmount)
                     .setDefaultValue(32)
                     .setMin(1)
-                    .setMax(1728)
+                    .setMax(3456)
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.yellowAmount = newValue)
                     .build());
 
             colors.add(entryBuilder.startIntField(Component.literal("Green Amount"), ModConfig.INSTANCE.greenAmount)
                     .setDefaultValue(64)
                     .setMin(1)
-                    .setMax(1728)
+                    .setMax(3456)
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.greenAmount = newValue)
                     .build());
 
