@@ -181,7 +181,7 @@ public class ChestRadarClient implements ClientModInitializer {
 
 				if (currentCount <= ri) {
 					r = 1.0f; g = 0.0f; b = 0.0f;
-				} else if (currentCount <= yi) { // FIX: Changed from hardcoded 32 to yi
+				} else if (currentCount <= yi) {
 					float range = yi - ri;
 					float t = range > 0 ? (currentCount - ri) / range : 1.0f;
 					r = 1.0f;
@@ -365,10 +365,8 @@ public class ChestRadarClient implements ClientModInitializer {
 
 			int countDelta = newest.count() - oldest.count();
 
-			// Always calculate the raw math representation
 			this.rawRate = ((float) countDelta / tickDelta) * 20.0f;
 
-			// Continue smoothing processing in the background
 			if (smoothedRate == 0.0f) {
 				smoothedRate = this.rawRate;
 			} else {
@@ -393,7 +391,6 @@ public class ChestRadarClient implements ClientModInitializer {
 		}
 
 		public float getDeltaPerSecond() {
-			// Returns either the mathematical raw value or the EMA smoothed value
 			return ModConfig.INSTANCE.smoothItemDelta ? smoothedRate : rawRate;
 		}
 
