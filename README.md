@@ -5,6 +5,7 @@ Organizing your chests can be very time-consuming, especially in the late-game. 
 ## Features
 * **Outlines:** By holding an item and activating the keybind, all nearby chests with your held item will be outlined.
 * **Text:** Text with the number of items will also be rendered.
+* **Item Deltas:** Text showing the number of items flowing into or out of containers will be rendered.
 * **Color:** The color of text and the outline will change depending on the amount of items.
 * **Full Support:** Works on all container types in Vanilla (e.g., Chests, Barrels, Shulker Boxes, and Crafters)
 * **Customization:** Extensive settings for customization.
