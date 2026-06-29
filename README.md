@@ -24,7 +24,7 @@ Multiplayer Note: If you want to play on a server or LAN with Chest Radar, it mu
 Chest Radar is lightweight. When searching for chests the mod fetches the location of any container blocks from a Chunk Registry. This method is much faster and less straining than checking every block in the search radius to see if a block is a container. Additionally, the search radius can be adjusted for better performance. There is a 10-tick delay between each search to prevent overloading and spam.
 
 ## Compatibility
-Chest Radar is almost always able to search for items added in other mods. Though as far as I know, Chest Radar cannot search in container blocks added by other mods (e.g., Tom's Simple Storage and Storage Drawers).
+Chest Radar is almost always able to search for items added in other mods. Chest Radar is also compatible with optimization mods like Sodium and Iris, as well as shaders. Though as far as I know, Chest Radar cannot search in container blocks added by other mods (e.g., Tom's Simple Storage and Storage Drawers).
 
 ## FAQ
 ### **Does this mod have to be installed on servers?**
