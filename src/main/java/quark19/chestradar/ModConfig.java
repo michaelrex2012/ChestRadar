@@ -27,7 +27,6 @@ public class ModConfig {
         public int greenAmount = 64;
 
         public int scanCooldown = 10;
-        public float secondRatio = 0.4f;
         public boolean doItemDelta = true;
     }
 

@@ -33,11 +33,14 @@ public class ChestRadarClient implements ClientModInitializer {
 
 	public static final Map<BlockPos, ChestHistory> CHEST_CACHE = new HashMap<>();
 
+	private static float ratio = 0.4f;
+	private static int extra = 0;
+
 	private int scanCooldown = 0;
 	private boolean wasPressedLastTick = false;
 	private boolean isToggleActive = false;
 	private long currentClientTick = 0;
-	private static int seconds = Math.round(ModConfig.INSTANCE.scanCooldown * ModConfig.INSTANCE.secondRatio);
+	private static int seconds = Math.toIntExact(Math.round((ModConfig.INSTANCE.scanCooldown + extra) * ratio));
 
 	private static final ByteBufferBuilder TEXT_BYTE_BUFFER = new ByteBufferBuilder(1024);
 
@@ -70,11 +73,28 @@ public class ChestRadarClient implements ClientModInitializer {
 				currentClientTick++;
 			}
 
+			if (ModConfig.INSTANCE.scanCooldown <= 10 && ModConfig.INSTANCE.scanCooldown > 5) {
+				ratio = 0.4f;
+				extra = 0;
+			} else if (ModConfig.INSTANCE.scanCooldown <= 5 && ModConfig.INSTANCE.scanCooldown >= 3) {
+				ratio = 0.6f;
+				extra = 0;
+			} else if (ModConfig.INSTANCE.scanCooldown < 3 && ModConfig.INSTANCE.scanCooldown > 0) {
+				ratio = 1.5f;
+				extra = 0;
+			} else if (ModConfig.INSTANCE.scanCooldown == 0) {
+				ratio = 1f;
+				extra = 3;
+			} else {
+				ratio = 0.2f;
+				extra = 0;
+			}
+
 			if (client.player == null) return;
 
 			if (!ModConfig.INSTANCE.enableMod) {CHEST_CACHE.clear(); return;}
 			boolean useToggle = ModConfig.INSTANCE.toggleMode;
-			seconds = Math.round(ModConfig.INSTANCE.scanCooldown * ModConfig.INSTANCE.secondRatio);
+			seconds = Math.round((ModConfig.INSTANCE.scanCooldown + extra) * ratio);
 
 			if (useToggle) {
 				wasPressedLastTick = false;
@@ -96,7 +116,7 @@ public class ChestRadarClient implements ClientModInitializer {
 						} else {
 							CHEST_CACHE.clear();
 						}
-						scanCooldown = 10;
+						scanCooldown = 0;
 					} else {
 						scanCooldown--;
 					}
@@ -307,17 +327,47 @@ public class ChestRadarClient implements ClientModInitializer {
 
 	public static class ChestHistory {
 		private final ArrayDeque<Snapshot> window = new ArrayDeque<>();
-		private final long maxTicks;
 
-		public ChestHistory(int seconds) {
-			this.maxTicks = seconds * 20L; // 20 Ticks Per Second
-		}
+		// NEW: This acts as our mathematical shock absorber
+		private float smoothedRate = 0.0f;
+
+		// REMOVED: maxTicks is no longer stored here so it can change dynamically!
+		public ChestHistory(int initialSeconds) {}
 
 		public void addSnapshot(int count, long currentTick) {
 			window.addLast(new Snapshot(count, currentTick));
 
-			while (!window.isEmpty() && (currentTick - window.peekFirst().tick() > maxTicks)) {
+			// NEW: Dynamically fetch the current global 'seconds' setting from the outer class
+			long currentMaxTicks = ChestRadarClient.seconds * 20L;
+
+			while (!window.isEmpty() && (currentTick - window.peekFirst().tick() > currentMaxTicks)) {
 				window.removeFirst();
+			}
+
+			// Recalculate the smooth rate every time data updates
+			updateSmoothedRate();
+		}
+
+		private void updateSmoothedRate() {
+			if (window.size() < 2) return;
+
+			Snapshot oldest = window.peekFirst();
+			Snapshot newest = window.peekLast();
+
+			long tickDelta = newest.tick() - oldest.tick();
+			if (tickDelta <= 0) return;
+
+			int countDelta = newest.count() - oldest.count();
+
+			// 1. Calculate the raw, jittery rate
+			float rawRate = ((float) countDelta / tickDelta) * 20.0f;
+
+			// 2. Smooth it out using an Exponential Moving Average
+			if (smoothedRate == 0.0f) {
+				smoothedRate = rawRate; // Fast-track initial value
+			} else {
+				// Blend 15% of the raw update with 85% of history to absorb jitter
+				smoothedRate = smoothedRate + 0.15f * (rawRate - smoothedRate);
 			}
 		}
 
@@ -328,13 +378,14 @@ public class ChestRadarClient implements ClientModInitializer {
 			long newestTick = window.peekLast().tick();
 			long actualSpan = newestTick - oldestTick;
 
-			// Allow a tiny 10-tick (0.5s) buffer threshold so it displays
-			// smoothly as soon as the final packet arriving completes the window duration
-			return actualSpan >= (maxTicks - 10);
+			long currentMaxTicks = ChestRadarClient.seconds * 20L;
+
+			return actualSpan >= (currentMaxTicks - 10);
 		}
 
-		public void clear()	{
+		public void clear() {
 			window.clear();
+			smoothedRate = 0.0f;
 		}
 
 		public int getCurrentCount() {
@@ -343,17 +394,8 @@ public class ChestRadarClient implements ClientModInitializer {
 		}
 
 		public float getDeltaPerSecond() {
-			if (window.size() < 2) return 0.0f;
-
-			Snapshot oldest = window.peekFirst();
-			Snapshot newest = window.peekLast();
-
-			long tickDelta = newest.tick() - oldest.tick();
-			if (tickDelta <= 0) return 0.0f;
-
-			int countDelta = newest.count() - oldest.count();
-
-			return ((float) countDelta / tickDelta) * 20.0f;
+			// Return the smooth rate instead of the raw calculation!
+			return smoothedRate;
 		}
 
 		private record Snapshot(int count, long tick) {}

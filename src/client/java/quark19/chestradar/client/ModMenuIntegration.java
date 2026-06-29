@@ -50,13 +50,6 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.doItemDelta = newValue)
                     .build());
 
-            general.addEntry(entryBuilder.startFloatField(Component.literal("History Size"), ModConfig.INSTANCE.secondRatio)
-                    .setDefaultValue(0.4f)
-                    .setMin(0.1f)
-                    .setMax(0.9f)
-                    .setTooltip(Component.literal("Best to leave as is. The ratio between Scan Cooldown and how many seconds past in chest cache history will be calculated in item delta averages. For example if this is 0.4 and Scan Cool down is 10, the total seconds in average calculation will be 4 seconds. Larger is more accurate but takes longer to update/display."))
-                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.secondRatio = newValue)
-                    .build());
 
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
 
