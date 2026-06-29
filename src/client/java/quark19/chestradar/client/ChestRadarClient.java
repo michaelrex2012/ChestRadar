@@ -114,10 +114,11 @@ public class ChestRadarClient implements ClientModInitializer {
 						ItemStack heldItem = client.player.getMainHandItem();
 						if (!heldItem.isEmpty()) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
+							scanCooldown = ModConfig.INSTANCE.scanCooldown;
 						} else {
 							CHEST_CACHE.clear();
+							scanCooldown = 0;
 						}
-						scanCooldown = ModConfig.INSTANCE.scanCooldown;
 					} else {
 						scanCooldown--;
 					}
@@ -133,10 +134,11 @@ public class ChestRadarClient implements ClientModInitializer {
 						ItemStack heldItem = client.player.getMainHandItem();
 						if (!heldItem.isEmpty()) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
+							scanCooldown = ModConfig.INSTANCE.scanCooldown;
 						} else {
 							CHEST_CACHE.clear();
+							scanCooldown = 0;
 						}
-						scanCooldown = ModConfig.INSTANCE.scanCooldown;
 					} else {
 						scanCooldown--;
 					}
