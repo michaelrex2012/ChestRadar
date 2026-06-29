@@ -16,18 +16,18 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setTitle(Component.literal("Storage Highlighter Config"));
 
             ConfigEntryBuilder entryBuilder = builder.entryBuilder();
-            ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
+            ConfigCategory features = builder.getOrCreateCategory(Component.literal("Features"));
 
-            general.setDescription(new FormattedText[]{FormattedText.of("Base functionality behaviour")});
+            features.setDescription(new FormattedText[]{FormattedText.of("Base functionality behaviour")});
 
-            general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Mod Functionality"), ModConfig.INSTANCE.enableMod)
+            features.addEntry(entryBuilder.startBooleanToggle(Component.literal("Mod Functionality"), ModConfig.INSTANCE.enableMod)
                     .setDefaultValue(true)
                     .setYesNoTextSupplier(bool -> bool ? Component.literal("Enabled") : Component.literal("Disabled"))
                     .setTooltip(Component.literal("If Chest Radar should be enabled."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.enableMod = newValue)
                     .build());
 
-            general.addEntry(entryBuilder.startIntField(Component.literal("Scan Radius"), ModConfig.INSTANCE.scanRadius)
+            features.addEntry(entryBuilder.startIntField(Component.literal("Scan Radius"), ModConfig.INSTANCE.scanRadius)
                     .setDefaultValue(24)
                     .setMin(8)
                     .setMax(32)
@@ -35,7 +35,7 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanRadius = newValue)
                     .build());
 
-            general.addEntry(entryBuilder.startIntField(Component.literal("Scan Cooldown"), ModConfig.INSTANCE.scanCooldown)
+            features.addEntry(entryBuilder.startIntField(Component.literal("Scan Cooldown"), ModConfig.INSTANCE.scanCooldown)
                     .setDefaultValue(10)
                     .setMin(0)
                     .setMax(20)
@@ -43,13 +43,14 @@ public class ModMenuIntegration implements ModMenuApi {
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanCooldown = newValue)
                     .build());
 
-            general.addEntry(entryBuilder.startBooleanToggle(Component.literal("Item Deltas"), ModConfig.INSTANCE.doItemDelta)
+            var doItemDeltas = entryBuilder.startBooleanToggle(Component.literal("Item Deltas"), ModConfig.INSTANCE.doItemDelta)
                     .setDefaultValue(true)
                     .setYesNoTextSupplier(bool -> bool ? Component.literal("Enabled") : Component.literal("Disabled"))
                     .setTooltip(Component.literal("When enabled, text showing the amount of items drained or pulled per second will be displayed."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.doItemDelta = newValue)
-                    .build());
+                    .build();
 
+            features.addEntry(doItemDeltas);
 
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
 
