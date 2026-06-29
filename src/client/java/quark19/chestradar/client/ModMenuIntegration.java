@@ -13,7 +13,7 @@ public class ModMenuIntegration implements ModMenuApi {
         return parent -> {
             ConfigBuilder builder = ConfigBuilder.create()
                     .setParentScreen(parent)
-                    .setTitle(Component.literal("Chest Config Config"));
+                    .setTitle(Component.literal("Chest Radar Config"));
 
             ConfigEntryBuilder entryBuilder = builder.entryBuilder();
             ConfigCategory features = builder.getOrCreateCategory(Component.literal("Features"));
