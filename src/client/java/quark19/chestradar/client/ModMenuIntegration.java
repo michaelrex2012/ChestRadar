@@ -29,8 +29,8 @@ public class ModMenuIntegration implements ModMenuApi {
 
             features.addEntry(entryBuilder.startIntField(Component.literal("Scan Radius"), ModConfig.INSTANCE.scanRadius)
                     .setDefaultValue(24)
-                    .setMin(8)
-                    .setMax(32)
+                    .setMin(2)
+                    .setMax(64)
                     .setTooltip(Component.literal("Radius of blocks the mod will search (Singleplayer or server-side only)."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.scanRadius = newValue)
                     .build());
@@ -81,7 +81,7 @@ public class ModMenuIntegration implements ModMenuApi {
             rendering.addEntry(renderOutlines);
 
             rendering.addEntry(entryBuilder.startBooleanToggle(Component.literal("Slim Outlines"), ModConfig.INSTANCE.slimOutlines)
-                    .setDefaultValue(true)
+                    .setDefaultValue(false)
                     .setYesNoTextSupplier(bool -> bool ? Component.literal("Yes") : Component.literal("No"))
                     .setTooltip(Component.literal("Outlines becomes smaller. Chest outlines look better with this enabled, but outlines on barrels and shulker boxes are not visible."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.slimOutlines = newValue)
@@ -89,9 +89,9 @@ public class ModMenuIntegration implements ModMenuApi {
                     .build());
 
             rendering.addEntry(entryBuilder.startFloatField(Component.literal("Outline Thickness"), ModConfig.INSTANCE.outlineThickness)
-                    .setDefaultValue(2)
+                    .setDefaultValue(4)
                     .setMin(1)
-                    .setMax(4)
+                    .setMax(6)
                     .setTooltip(Component.literal("How thick outlines will be."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.outlineThickness = newValue)
                     .setRequirement(renderOutlines::getValue)
@@ -130,7 +130,7 @@ public class ModMenuIntegration implements ModMenuApi {
 
             controls.addEntry(entryBuilder.startBooleanToggle(Component.literal("Search Keybind Mode"), ModConfig.INSTANCE.toggleMode)
                     .setYesNoTextSupplier(bool -> bool ? Component.literal("Toggle") : Component.literal("Hold"))
-                    .setDefaultValue(false)
+                    .setDefaultValue(true)
                     .setTooltip(Component.literal("Hold or toggle keybind."))
                     .setSaveConsumer(newValue -> ModConfig.INSTANCE.toggleMode = newValue)
                     .build());
