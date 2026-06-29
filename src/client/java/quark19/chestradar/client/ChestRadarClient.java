@@ -135,7 +135,7 @@ public class ChestRadarClient implements ClientModInitializer {
 						} else {
 							CHEST_CACHE.clear();
 						}
-						scanCooldown = 10;
+						scanCooldown = 0;
 					} else {
 						scanCooldown--;
 					}
@@ -328,6 +328,7 @@ public class ChestRadarClient implements ClientModInitializer {
 		private final ArrayDeque<Snapshot> window = new ArrayDeque<>();
 
 		private float smoothedRate = 0.0f;
+		private float rawRate = 0.0f;
 
 		public ChestHistory(int initialSeconds) {}
 
@@ -340,11 +341,14 @@ public class ChestRadarClient implements ClientModInitializer {
 				window.removeFirst();
 			}
 
-			updateSmoothedRate();
+			updateRates();
 		}
 
-		private void updateSmoothedRate() {
-			if (window.size() < 2) return;
+		private void updateRates() {
+			if (window.size() < 2) {
+				this.rawRate = 0.0f;
+				return;
+			}
 
 			Snapshot oldest = window.peekFirst();
 			Snapshot newest = window.peekLast();
@@ -353,14 +357,16 @@ public class ChestRadarClient implements ClientModInitializer {
 			if (tickDelta <= 0) return;
 
 			int countDelta = newest.count() - oldest.count();
-			float rawRate = ((float) countDelta / tickDelta) * 20.0f;
 
+			// Always calculate the raw math representation
+			this.rawRate = ((float) countDelta / tickDelta) * 20.0f;
+
+			// Continue smoothing processing in the background
 			if (smoothedRate == 0.0f) {
-				smoothedRate = rawRate;
+				smoothedRate = this.rawRate;
 			} else {
 				float alpha = Math.max(0.02f, 1.0f / window.size());
-
-				smoothedRate = smoothedRate + alpha * (rawRate - smoothedRate);
+				smoothedRate = smoothedRate + alpha * (this.rawRate - smoothedRate);
 			}
 
 			if (Math.abs(smoothedRate) < 0.01f) {
@@ -383,6 +389,7 @@ public class ChestRadarClient implements ClientModInitializer {
 		public void clear() {
 			window.clear();
 			smoothedRate = 0.0f;
+			rawRate = 0.0f;
 		}
 
 		public int getCurrentCount() {
@@ -391,7 +398,8 @@ public class ChestRadarClient implements ClientModInitializer {
 		}
 
 		public float getDeltaPerSecond() {
-			return smoothedRate;
+			// Returns either the mathematical raw value or the EMA smoothed value
+			return ModConfig.INSTANCE.smoothItemDelta ? smoothedRate : rawRate;
 		}
 
 		private record Snapshot(int count, long tick) {}

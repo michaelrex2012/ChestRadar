@@ -52,6 +52,14 @@ public class ModMenuIntegration implements ModMenuApi {
 
             features.addEntry(doItemDeltas);
 
+            features.addEntry(entryBuilder.startBooleanToggle(Component.literal("Smooth Item Deltas"), ModConfig.INSTANCE.smoothItemDelta)
+                    .setDefaultValue(true)
+                    .setYesNoTextSupplier(bool -> bool ? Component.literal("Enabled") : Component.literal("Disabled"))
+                    .setTooltip(Component.literal("Recommended. When on, the item delta values are more stable but take longer to reach that stability. When off values may oscillate but reaches stability faster"))
+                    .setRequirement(doItemDeltas::getValue)
+                    .setSaveConsumer(newValue -> ModConfig.INSTANCE.smoothItemDelta = newValue)
+                    .build());
+
             ConfigCategory rendering = builder.getOrCreateCategory(Component.literal("Rendering"));
 
             rendering.setDescription(new FormattedText[]{FormattedText.of("Rendering of outlines and text")});

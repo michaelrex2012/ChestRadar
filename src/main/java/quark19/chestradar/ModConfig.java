@@ -28,6 +28,7 @@ public class ModConfig {
 
         public int scanCooldown = 10;
         public boolean doItemDelta = true;
+        public boolean smoothItemDelta = true;
     }
 
     public static void load() {
