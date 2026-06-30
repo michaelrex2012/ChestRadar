@@ -89,7 +89,7 @@ public class ModMenuIntegration implements ModMenuApi {
                     .build());
 
             rendering.addEntry(entryBuilder.startFloatField(Component.literal("Outline Thickness"), ModConfig.INSTANCE.outlineThickness)
-                    .setDefaultValue(4)
+                    .setDefaultValue(2)
                     .setMin(1)
                     .setMax(6)
                     .setTooltip(Component.literal("How thick outlines will be."))

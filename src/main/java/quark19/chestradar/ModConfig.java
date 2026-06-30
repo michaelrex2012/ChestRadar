@@ -17,7 +17,7 @@ public class ModConfig {
         public int scanRadius = 24;
         public boolean slimOutlines = false;
         public boolean toggleMode = true;
-        public float outlineThickness = 4.0f;
+        public float outlineThickness = 2.0f;
         public boolean renderOutlines = true;
         public boolean textLocation = true;
         public boolean enableMod = true;

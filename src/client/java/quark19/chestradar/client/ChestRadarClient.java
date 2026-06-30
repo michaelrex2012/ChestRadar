@@ -15,6 +15,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import org.joml.Matrix3f;
 import org.lwjgl.glfw.GLFW;
 import quark19.chestradar.ModConfig;
 import quark19.chestradar.SearchRequestPayload;
@@ -315,48 +316,28 @@ public class ChestRadarClient implements ClientModInitializer {
 		});
 	}
 
-	private static void drawSafeBox(PoseStack.Pose pose, VertexConsumer buffer,
-	                                float minX, float minY, float minZ,
-	                                float maxX, float maxY, float maxZ,
-	                                float r, float g, float b, float a) {
-		Matrix4f matrix = pose.pose();
+	private static void drawSafeBox(PoseStack.Pose pose, VertexConsumer consumer, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, float r, float g, float b, float a) {
 		float thickness = ModConfig.INSTANCE.outlineThickness;
 
-		vertex(buffer, matrix, minX, minY, minZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, maxX, minY, minZ, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, minY, minZ, maxX, minY, minZ, 1.0f, 0.0f, 0.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, maxY, minZ, maxX, maxY, minZ, 1.0f, 0.0f, 0.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, minY, maxZ, maxX, minY, maxZ, 1.0f, 0.0f, 0.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, maxY, maxZ, maxX, maxY, maxZ, 1.0f, 0.0f, 0.0f, r, g, b, a, thickness);
 
-		vertex(buffer, matrix, maxX, minY, minZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, maxX, minY, maxZ, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, minY, minZ, minX, maxY, minZ, 0.0f, 1.0f, 0.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, maxX, minY, minZ, maxX, maxY, minZ, 0.0f, 1.0f, 0.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, minY, maxZ, minX, maxY, maxZ, 0.0f, 1.0f, 0.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, maxX, minY, maxZ, maxX, maxY, maxZ, 0.0f, 1.0f, 0.0f, r, g, b, a, thickness);
 
-		vertex(buffer, matrix, maxX, minY, maxZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, minX, minY, maxZ, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, minY, minZ, minX, minY, maxZ, 0.0f, 0.0f, 1.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, maxX, minY, minZ, maxX, minY, maxZ, 0.0f, 0.0f, 1.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, minX, maxY, minZ, minX, maxY, maxZ, 0.0f, 0.0f, 1.0f, r, g, b, a, thickness);
+		drawLine(pose, consumer, maxX, maxY, minZ, maxX, maxY, maxZ, 0.0f, 0.0f, 1.0f, r, g, b, a, thickness);
+	}
 
-		vertex(buffer, matrix, minX, minY, maxZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, minX, minY, minZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, minX, maxY, minZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, maxX, maxY, minZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, maxX, maxY, minZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, maxX, maxY, maxZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, maxX, maxY, maxZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, minX, maxY, maxZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, minX, maxY, maxZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, minX, maxY, minZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, minX, minY, minZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, minX, maxY, minZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, maxX, minY, minZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, maxX, maxY, minZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, maxX, minY, maxZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, maxX, maxY, maxZ, r, g, b, a, thickness);
-
-		vertex(buffer, matrix, minX, minY, maxZ, r, g, b, a, thickness);
-		vertex(buffer, matrix, minX, maxY, maxZ, r, g, b, a, thickness);
+	private static void drawLine(PoseStack.Pose pose, VertexConsumer consumer, float x1, float y1, float z1, float x2, float y2, float z2, float nx, float ny, float nz, float r, float g, float b, float a, float thickness) {
+		consumer.addVertex(pose.pose(), x1, y1, z1).setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(thickness);
+		consumer.addVertex(pose.pose(), x2, y2, z2).setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(thickness);
 	}
 
 	private static void vertex(VertexConsumer buffer, Matrix4f matrix,
