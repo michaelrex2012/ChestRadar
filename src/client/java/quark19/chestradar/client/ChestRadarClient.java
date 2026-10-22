@@ -15,7 +15,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import org.joml.Matrix3f;
 import org.lwjgl.glfw.GLFW;
 import quark19.chestradar.ModConfig;
 import quark19.chestradar.SearchRequestPayload;
