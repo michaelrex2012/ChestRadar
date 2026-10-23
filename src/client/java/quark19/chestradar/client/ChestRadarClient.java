@@ -6,15 +6,18 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import org.lwjgl.glfw.GLFW;
 import quark19.chestradar.ModConfig;
 import quark19.chestradar.SearchRequestPayload;
@@ -33,8 +36,8 @@ import java.util.Map;
 
 public class ChestRadarClient implements ClientModInitializer {
 	public static KeyMapping highlightKeyMapping;
-
 	public static final Map<BlockPos, ChestHistory> CHEST_CACHE = new HashMap<>();
+	public static boolean isServerModded = false; // Tracks whether server has the mod
 
 	private static float ratio = 0.4f;
 	private static int extra = 0;
@@ -51,8 +54,10 @@ public class ChestRadarClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		ModConfig.load();
 
+		// Packet receiver from a modded server
 		ClientPlayNetworking.registerGlobalReceiver(SearchResponsePayload.TYPE, (payload, context) -> {
 			context.client().execute(() -> {
+				isServerModded = true; // Confirmed server has the mod[cite: 8]
 				CHEST_CACHE.keySet().retainAll(payload.chestData().keySet());
 
 				payload.chestData().forEach((pos, count) -> {
@@ -60,6 +65,31 @@ public class ChestRadarClient implements ClientModInitializer {
 					history.addSnapshot(count, currentClientTick);
 				});
 			});
+		});
+
+		// Fallback container caching for unmodded/vanilla servers[cite: 4, 6]
+		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+			if (world.isClientSide() && !isServerModded && ModConfig.INSTANCE.enableMod) {
+				BlockPos pos = hitResult.getBlockPos();
+				Minecraft client = Minecraft.getInstance();
+				client.execute(() -> {
+					if (client.player != null && client.player.containerMenu != null) {
+						int total = 0;
+						var container = client.player.containerMenu;
+						for (int i = 0; i < container.slots.size(); i++) {
+							ItemStack stack = container.getSlot(i).getItem();
+							if (!stack.isEmpty()) {
+								total += stack.getCount();
+							}
+						}
+						if (total > 0) {
+							ChestHistory history = CHEST_CACHE.computeIfAbsent(pos, k -> new ChestHistory());
+							history.addSnapshot(total, currentClientTick);
+						}
+					}
+				});
+			}
+			return InteractionResult.PASS;
 		});
 
 		KeyMapping.Category ChestRadarKeyMappingCategory = new KeyMapping.Category(Identifier.fromNamespaceAndPath("chestradar", "storage"));
@@ -95,9 +125,15 @@ public class ChestRadarClient implements ClientModInitializer {
 
 			if (client.player == null) return;
 
-			if (!ModConfig.INSTANCE.enableMod) {CHEST_CACHE.clear(); return;}
+			if (!ModConfig.INSTANCE.enableMod) {
+				CHEST_CACHE.clear();
+				return;
+			}
 			boolean useToggle = ModConfig.INSTANCE.toggleMode;
 			seconds = Math.round((ModConfig.INSTANCE.scanCooldown + extra) * ratio);
+
+			// Fix: Singleplayer integrated servers are always available locally
+			boolean serverAvailable = isServerModded || client.hasSingleplayerServer();
 
 			if (useToggle) {
 				wasPressedLastTick = false;
@@ -114,18 +150,14 @@ public class ChestRadarClient implements ClientModInitializer {
 				if (isToggleActive) {
 					if (scanCooldown <= 0) {
 						ItemStack heldItem = client.player.getMainHandItem();
-						if (!heldItem.isEmpty()) {
+						if (!heldItem.isEmpty() && serverAvailable) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
 							scanCooldown = ModConfig.INSTANCE.scanCooldown;
-						} else {
-							CHEST_CACHE.clear();
-							scanCooldown = 0;
 						}
 					} else {
 						scanCooldown--;
 					}
 				}
-
 			} else {
 				isToggleActive = false;
 
@@ -134,7 +166,7 @@ public class ChestRadarClient implements ClientModInitializer {
 
 					if (scanCooldown <= 0) {
 						ItemStack heldItem = client.player.getMainHandItem();
-						if (!heldItem.isEmpty()) {
+						if (!heldItem.isEmpty() && serverAvailable) {
 							ClientPlayNetworking.send(new SearchRequestPayload(heldItem));
 							scanCooldown = ModConfig.INSTANCE.scanCooldown;
 						} else {
@@ -153,9 +185,6 @@ public class ChestRadarClient implements ClientModInitializer {
 				}
 			}
 		});
-
-
-
 		WorldRenderEvents.END_MAIN.register(context -> {
 			if (CHEST_CACHE.isEmpty()) return;
 
@@ -171,7 +200,6 @@ public class ChestRadarClient implements ClientModInitializer {
 			CHEST_CACHE.forEach((pos, chestHistory) -> {
 				BlockState blockState = client.level.getBlockState(pos);
 
-				// Default bounds parameters for a standard 1x1x1 block layout
 				float minX = 0.0f, minY = 0.0f, minZ = 0.0f;
 				float maxX = 1.0f, maxY = 1.0f, maxZ = 1.0f;
 				double textOffsetX = 0.5;
@@ -180,32 +208,26 @@ public class ChestRadarClient implements ClientModInitializer {
 				int currentCount = chestHistory.getCurrentCount();
 				float deltaPerSecond = chestHistory.getDeltaPerSecond();
 
-				// Double chest aggregation and double-box expanding logic
+				// Double chest aggregation & fallback rendering logic
 				if (blockState.getBlock() instanceof ChestBlock) {
-					net.minecraft.world.level.block.state.properties.ChestType chestType =
-							blockState.getValue(ChestBlock.TYPE);
+					ChestType chestType = blockState.getValue(ChestBlock.TYPE);
 
-					if (chestType != net.minecraft.world.level.block.state.properties.ChestType.SINGLE) {
-						// Get the precise direction of the neighboring chest half
+					if (chestType != ChestType.SINGLE) {
 						Direction neighborDir = ChestBlock.getConnectedDirection(blockState);
 						BlockPos neighborPos = pos.relative(neighborDir);
 
-						if (chestType == net.minecraft.world.level.block.state.properties.ChestType.RIGHT) {
-							// If the LEFT half is also tracked in cache, let it handle the double-render.
-							// We only allow the RIGHT half to render if the LEFT half is untracked (empty).
+						if (chestType == ChestType.RIGHT) {
 							if (CHEST_CACHE.containsKey(neighborPos)) {
 								return;
 							}
 						}
 
-						// If the neighbor half has cached data, merge its item tallies
 						if (CHEST_CACHE.containsKey(neighborPos)) {
 							ChestHistory neighborHistory = CHEST_CACHE.get(neighborPos);
 							currentCount += neighborHistory.getCurrentCount();
 							deltaPerSecond += neighborHistory.getDeltaPerSecond();
 						}
 
-						// Dynamically expand the bounding box towards the neighbor's real position
 						if (neighborDir == Direction.EAST) {
 							maxX = 2.0f; textOffsetX = 1.0;
 						} else if (neighborDir == Direction.WEST) {
@@ -339,18 +361,8 @@ public class ChestRadarClient implements ClientModInitializer {
 		consumer.addVertex(pose.pose(), x2, y2, z2).setColor(r, g, b, a).setNormal(nx, ny, nz).setLineWidth(thickness);
 	}
 
-	private static void vertex(VertexConsumer buffer, Matrix4f matrix,
-	                           float x, float y, float z,
-	                           float r, float g, float b, float a, float thickness) {
-		buffer.addVertex(matrix, x, y, z)
-				.setColor(r, g, b, a)
-				.setNormal(1.0f, 0.0f, 0.0f)
-				.setLineWidth(thickness);
-	}
-
 	public static class ChestHistory {
 		private final ArrayDeque<Snapshot> window = new ArrayDeque<>();
-
 		private float smoothedRate = 0.0f;
 		private float rawRate = 0.0f;
 
@@ -358,13 +370,10 @@ public class ChestRadarClient implements ClientModInitializer {
 
 		public void addSnapshot(int count, long currentTick) {
 			window.addLast(new Snapshot(count, currentTick));
-
 			long currentMaxTicks = ChestRadarClient.seconds * 20L;
-
 			while (!window.isEmpty() && (currentTick - window.peekFirst().tick() > currentMaxTicks)) {
 				window.removeFirst();
 			}
-
 			updateRates();
 		}
 
@@ -373,15 +382,12 @@ public class ChestRadarClient implements ClientModInitializer {
 				this.rawRate = 0.0f;
 				return;
 			}
-
 			Snapshot oldest = window.peekFirst();
 			Snapshot newest = window.peekLast();
-
 			long tickDelta = newest.tick() - oldest.tick();
 			if (tickDelta <= 0) return;
 
 			int countDelta = newest.count() - oldest.count();
-
 			this.rawRate = ((float) countDelta / tickDelta) * 20.0f;
 
 			if (smoothedRate == 0.0f) {

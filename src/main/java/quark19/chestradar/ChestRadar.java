@@ -62,7 +62,6 @@ public class ChestRadar implements ModInitializer {
 
 				for (int cX = minChunkX; cX <= maxChunkX; cX++) {
 					for (int cZ = minChunkZ; cZ <= maxChunkZ; cZ++) {
-
 						if (world.hasChunk(cX, cZ)) {
 							LevelChunk chunk = world.getChunk(cX, cZ);
 
